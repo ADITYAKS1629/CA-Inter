@@ -37,7 +37,7 @@
         <div class="max-w-md mx-auto flex justify-between items-center">
             <div>
                 <h1 class="text-xs font-semibold tracking-wider text-textMuted uppercase">CA Inter May 27</h1>
-                <p id="countdown-text" class="text-lg font-bold text-amber-400">Calculing...</p>
+                <p id="countdown-text" class="text-lg font-bold text-amber-400">Calculating...</p>
             </div>
             <div class="text-right">
                 <span class="text-xs px-2 py-1 bg-zinc-900 border border-cardBorder rounded-full text-zinc-400 font-medium">AIR Target</span>
@@ -79,9 +79,9 @@
             <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl">
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="text-sm font-bold text-zinc-200 flex items-center gap-2">
-                        <i class="fa-solid fa-bullseye text-emerald-400"></i> Daily Targets (2 Chapters)
+                        <i class="fa-solid fa-bullseye text-emerald-400"></i> Daily Targets (Theory + Practical)
                     </h2>
-                    <span class="text-xs text-zinc-500">Auto Queue</span>
+                    <span class="text-xs text-zinc-500">Balanced Mix</span>
                 </div>
                 <div id="daily-targets-container" class="space-y-2.5">
                     <!-- Dynamic Targets injected via JS -->
@@ -131,7 +131,7 @@
 
             <!-- Subject Database Summary -->
             <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl">
-                <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">All 7 Subjects Loaded</h3>
+                <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">All 8 Modules Loaded</h3>
                 <div id="subjects-summary" class="space-y-2 text-xs">
                     <!-- Populated via JS -->
                 </div>
@@ -174,46 +174,46 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // MASTER DATABASE: ALL 7 SUBJECTS & CHAPTERS
+        // MASTER DATABASE: ALL 8 MODULES WITH THEORY / PRACTICAL TAGS
         const masterDatabase = [
-            { id: 'gst', name: 'GST (Indirect Tax)', chapters: [
+            { id: 'gst', name: 'GST (Indirect Tax)', type: 'theory', chapters: [
                 'GST Introduction', 'Supply', 'Value of Supply', 'Time of Supply', 'Place of Supply', 
                 'Charge of GST', 'Input Tax Credit', 'Registration', 'Exemption', 'Payment of Tax', 
                 'E-Way Bill', 'TDS', 'TCS', 'Debit and Credit Note', 'Returns', 'Accounts and Records'
             ]},
-            { id: 'it', name: 'Income Tax (Direct Tax)', chapters: [
+            { id: 'it', name: 'Income Tax (Direct Tax)', type: 'practical', chapters: [
                 'Basic Concepts', 'Residence and Scope of Total Income', 'House Property', 'Salary', 
                 'PGBP', 'Capital Gains', 'Other Sources', 'Set-off and Carry Forward', 'Clubbing of Income', 
                 'Deductions', 'Advance Tax, TDS & TCS'
             ]},
-            { id: 'costing', name: 'Cost and Management Accounting', chapters: [
+            { id: 'costing', name: 'Cost and Management Accounting', type: 'practical', chapters: [
                 'Introduction', 'Employee Cost & Direct Expenses', 'Material Cost', 'Overheads', 
                 'Activity Based Costing', 'Cost Sheet', 'Cost Accounting System', 'Service Costing', 
                 'Process Costing', 'Joint and By-Product', 'Marginal Costing', 'Budget & Budgetary Controls', 
                 'Standard Costing', 'Job Costing', 'Batch Costing'
             ]},
-            { id: 'audit', name: 'Auditing and Ethics', chapters: [
+            { id: 'audit', name: 'Auditing and Ethics', type: 'theory', chapters: [
                 'Nature, Objective and Scope', 'Ethics and Terms of Audit Engagement', 'Audit Strategy, Planning, Program', 
                 'Audit Documentation', 'Completion and Review', 'Audit of Bank', 'Audit of Item of Financial Statement', 
                 'Special Feature of Audit & Type of Entities', 'Audit Report', 'Risk Assessment & Internal Controls', 'Audit Evidence'
             ]},
-            { id: 'law', name: 'Corporate and Other Laws', chapters: [
+            { id: 'law', name: 'Corporate and Other Laws', type: 'theory', chapters: [
                 'Introduction', 'Preliminary', 'Incorporation of Company', 'Prospectus and Allotment', 
                 'Share Capital and Debenture', 'Acceptance of Deposit', 'Registration of Charges', 
                 'Declaration and Payment of Dividend', 'Accounts of Companies', 'General Clauses Act', 
                 'Companies Incorporated Outside India', 'Audit and Auditors', 'LLP Act', 'Interpretation of Statutes', 
                 'The Foreign Exchange Management Act', 'Management and Administration'
             ]},
-            { id: 'fm', name: 'Financial Management (FM)', chapters: [
+            { id: 'fm', name: 'Financial Management (FM)', type: 'practical', chapters: [
                 'Cost of Capital', 'Leverages', 'Capital Structure', 'Investment Decisions', 
                 'Dividend Decisions', 'Management of Receivables & Payables', 'Treasury & Cash Management'
             ]},
-            { id: 'sm', name: 'Strategic Management (SM)', chapters: [
+            { id: 'sm', name: 'Strategic Management (SM)', type: 'theory', chapters: [
                 'Introduction to Strategic Management', 'Working Capital Management & Financial', 'External Environment', 
                 'Internal Environment', 'Ratio Analysis', 'Strategic Choices', 'Types of Financing', 
                 'Strategic Implementation & Evaluation', 'Inventory Management'
             ]},
-            { id: 'accounts', name: 'Advanced Accounting & AS', chapters: [
+            { id: 'accounts', name: 'Advanced Accounting & AS', type: 'practical', chapters: [
                 'Accounting for Investment', 'Financial Statement', 'Cash Flow Statement', 'Buyback of Security', 
                 'Internal Reconstitution', 'Amalgamation', 'Branch Accounting', 'Consolidated Financial Statement', 
                 'Framework for Preparation', 'AS 1', 'AS 2', 'AS 4', 'AS 5', 'AS 7', 'AS 9', 'AS 10', 'AS 11', 'AS 12', 
@@ -221,13 +221,14 @@
             ]}
         ];
 
-        // Flatten all chapters into a single array with unique keys
+        // Flatten all chapters with type metadata
         let allChapters = [];
         masterDatabase.forEach(sub => {
             sub.chapters.forEach((ch, idx) => {
                 allChapters.push({
                     key: `${sub.id}_${idx}`,
                     subject: sub.name,
+                    type: sub.type, // 'theory' or 'practical'
                     title: ch
                 });
             });
@@ -235,10 +236,11 @@
 
         // STATE MANAGEMENT (LocalStorage)
         let appState = JSON.parse(localStorage.getItem('ca_inter_state_2027')) || {
-            completedSyllabus: {}, // key: true
-            revisionQueue: [],     // array of { key, title, availableDate }
-            completedRevisions: {}, // key: { rev1: bool, rev2: bool, rev3: bool }
-            testSeries: { 1: false, 2: false }
+            completedSyllabus: {}, 
+            revisionQueue: [],     
+            completedRevisions: {}, 
+            testSeries: { 1: false, 2: false },
+            dailyTargets: []
         };
 
         function saveState() {
@@ -273,14 +275,37 @@
             document.getElementById(`nav-${tabId}`).className = "flex flex-col items-center gap-1 text-cyan-400 transition-colors";
         }
 
-        // INITIALIZE DAILY TARGETS IF EMPTY
+        // INITIALIZE DAILY TARGETS: STRICT 1 THEORY + 1 PRACTICAL
         function initDailyTargets() {
-            if (!appState.dailyTargets || appState.dailyTargets.length === 0) {
-                // Pick 2 uncompleted chapters
-                let uncompleted = allChapters.filter(ch => !appState.completedSyllabus[ch.key]);
-                appState.dailyTargets = uncompleted.slice(0, 2).map(ch => ch.key);
-                saveState();
+            // Clean up completed chapters from daily targets
+            if (appState.dailyTargets) {
+                appState.dailyTargets = appState.dailyTargets.filter(k => !appState.completedSyllabus[k]);
+            } else {
+                appState.dailyTargets = [];
             }
+
+            // Ensure we always have exactly 1 Practical and 1 Theory target
+            let practicalNeeded = !appState.dailyTargets.some(k => {
+                let ch = allChapters.find(c => c.key === k);
+                return ch && ch.type === 'practical';
+            });
+
+            let theoryNeeded = !appState.dailyTargets.some(k => {
+                let ch = allChapters.find(c => c.key === k);
+                return ch && ch.type === 'theory';
+            });
+
+            if (practicalNeeded) {
+                let uncompletedPractical = allChapters.find(ch => ch.type === 'practical' && !appState.completedSyllabus[ch.key] && !appState.dailyTargets.includes(ch.key));
+                if (uncompletedPractical) appState.dailyTargets.push(uncompletedPractical.key);
+            }
+
+            if (theoryNeeded) {
+                let uncompletedTheory = allChapters.find(ch => ch.type === 'theory' && !appState.completedSyllabus[ch.key] && !appState.dailyTargets.includes(ch.key));
+                if (uncompletedTheory) appState.dailyTargets.push(uncompletedTheory.key);
+            }
+
+            saveState();
         }
 
         // COMPLETE DAILY TARGET & PUSH TO REVISION QUEUE (2 DAYS DELAY)
@@ -289,12 +314,6 @@
             
             // Remove from daily targets
             appState.dailyTargets = appState.dailyTargets.filter(k => k !== key);
-            
-            // Add next uncompleted chapter to daily targets if available
-            let uncompleted = allChapters.filter(ch => !appState.completedSyllabus[ch.key] && !appState.dailyTargets.includes(ch.key));
-            if (uncompleted.length > 0 && appState.dailyTargets.length < 2) {
-                appState.dailyTargets.push(uncompleted[0].key);
-            }
 
             // Push to Revision Queue with 2 days delay
             let unlockDate = new Date();
@@ -304,7 +323,8 @@
                 unlockTime: unlockDate.getTime()
             });
 
-            saveState();
+            // Refill targets to maintain 1 Theory + 1 Practical mix
+            initDailyTargets();
         }
 
         // COMPLETE REVISION ITEM (FIFO)
@@ -359,18 +379,23 @@
             // 3. Render Daily Targets
             let targetsHtml = '';
             if (!appState.dailyTargets || appState.dailyTargets.length === 0) {
-                targetsHtml = `<p class="text-xs text-zinc-500 italic">All targets completed! Great job.</p>`;
+                targetsHtml = `<p class="text-xs text-zinc-500 italic">All targets completed! Outstanding work.</p>`;
             } else {
                 appState.dailyTargets.forEach(key => {
                     let ch = allChapters.find(c => c.key === key);
                     if (ch) {
+                        let badgeColor = ch.type === 'practical' ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' : 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20';
+                        let badgeText = ch.type === 'practical' ? 'Practical' : 'Theory';
                         targetsHtml += `
                             <div class="flex items-center justify-between p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl">
                                 <div>
-                                    <span class="text-[10px] text-emerald-400 font-semibold block">${ch.subject}</span>
+                                    <div class="flex items-center gap-2 mb-0.5">
+                                        <span class="text-[10px] text-zinc-400 font-semibold">${ch.subject}</span>
+                                        <span class="text-[9px] px-1.5 py-0.5 rounded border ${badgeColor} uppercase tracking-wider">${badgeText}</span>
+                                    </div>
                                     <p class="text-xs font-medium text-zinc-200">${ch.title}</p>
                                 </div>
-                                <button onclick="completeTarget('${ch.key}')" class="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-semibold rounded-lg border border-emerald-500/30 transition-colors">
+                                <button onclick="completeTarget('${ch.key}')" class="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-semibold rounded-lg border border-emerald-500/30 transition-colors shrink-0 ml-2">
                                     <i class="fa-solid fa-check mr-1"></i> Done
                                 </button>
                             </div>
@@ -397,7 +422,7 @@
                                     <span class="text-[10px] text-purple-400 font-semibold block">${ch.subject}</span>
                                     <p class="text-xs font-medium text-zinc-200">${ch.title}</p>
                                 </div>
-                                <button onclick="completeRevisionItem(${index})" class="px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-xs font-semibold rounded-lg border border-purple-500/30 transition-colors">
+                                <button onclick="completeRevisionItem(${index})" class="px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-xs font-semibold rounded-lg border border-purple-500/30 transition-colors shrink-0 ml-2">
                                     <i class="fa-solid fa-rotate-left mr-1"></i> Revise
                                 </button>
                             </div>
@@ -437,8 +462,8 @@
                     let revState = appState.completedRevisions[key] || { rev1: false, rev2: false, rev3: false };
                     tripHtml += `
                         <div class="p-2.5 bg-zinc-900/60 border border-zinc-800 rounded-xl flex items-center justify-between text-xs">
-                            <span class="text-zinc-300 font-medium truncate max-w-[180px]">${ch}</span>
-                            <div class="flex items-center gap-3">
+                            <span class="text-zinc-300 font-medium truncate max-w-[170px]">${ch}</span>
+                            <div class="flex items-center gap-2.5">
                                 <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" ${revState.rev1 ? 'checked' : ''} disabled class="accent-amber-400"> R1</label>
                                 <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" ${revState.rev2 ? 'checked' : ''} disabled class="accent-amber-400"> R2</label>
                                 <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" ${revState.rev3 ? 'checked' : ''} disabled class="accent-amber-400"> R3</label>
