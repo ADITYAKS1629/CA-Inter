@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CA Inter AIR Command Center</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#000000',
+                        cardBg: '#121214',
+                        cardBorder: '#27272a',
+                        textMain: '#f4f4f5',
+                        textMuted: '#a1a1aa'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #000000; color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-darkBg text-textMain min-h-screen flex flex-col justify-between pb-20">
+
+    <!-- TOP HEADER: LIVE COUNTDOWN -->
+    <header class="sticky top-0 z-50 bg-darkBg/90 backdrop-blur-md border-b border-cardBorder px-4 py-3">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-xs font-semibold tracking-wider text-textMuted uppercase">CA Inter May 27</h1>
+                <p id="countdown-text" class="text-lg font-bold text-amber-400">Calculing...</p>
+            </div>
+            <div class="text-right">
+                <span class="text-xs px-2 py-1 bg-zinc-900 border border-cardBorder rounded-full text-zinc-400 font-medium">AIR Target</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="max-w-md mx-auto w-full p-4 space-y-5 flex-1">
+
+        <!-- PROGRESS BARS SECTION -->
+        <section class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl space-y-4">
+            <!-- Rank Progress Bar -->
+            <div>
+                <div class="flex justify-between items-center text-xs mb-1.5 font-medium">
+                    <span class="text-amber-400 flex items-center gap-1.5"><i class="fa-solid fa-crown"></i> Rank Mastery Progress</span>
+                    <span id="rank-pct" class="text-amber-400 font-bold">0%</span>
+                </div>
+                <div class="w-full bg-zinc-900 h-3 rounded-full overflow-hidden p-0.5 border border-zinc-800">
+                    <div id="rank-bar" class="bg-gradient-to-r from-amber-600 to-yellow-400 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Syllabus Completion Bar -->
+            <div>
+                <div class="flex justify-between items-center text-xs mb-1.5 font-medium">
+                    <span class="text-cyan-400 flex items-center gap-1.5"><i class="fa-solid fa-book-open"></i> Syllabus Completion</span>
+                    <span id="syllabus-pct" class="text-cyan-400 font-bold">0%</span>
+                </div>
+                <div class="w-full bg-zinc-900 h-3 rounded-full overflow-hidden p-0.5 border border-zinc-800">
+                    <div id="syllabus-bar" class="bg-gradient-to-r from-cyan-600 to-blue-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 1: HOME DASHBOARD -->
+        <div id="tab-home" class="tab-content space-y-5">
+            <!-- Daily Targets Section -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-bold text-zinc-200 flex items-center gap-2">
+                        <i class="fa-solid fa-bullseye text-emerald-400"></i> Daily Targets (2 Chapters)
+                    </h2>
+                    <span class="text-xs text-zinc-500">Auto Queue</span>
+                </div>
+                <div id="daily-targets-container" class="space-y-2.5">
+                    <!-- Dynamic Targets injected via JS -->
+                </div>
+            </div>
+
+            <!-- Revision Reminders Section (Spaced Repetition FIFO Queue) -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-bold text-zinc-200 flex items-center gap-2">
+                        <i class="fa-solid fa-rotate text-purple-400"></i> Revision Reminder (2-Day Delay)
+                    </h2>
+                    <span class="text-xs text-purple-400 font-medium">Active FIFO</span>
+                </div>
+                <div id="revision-reminders-container" class="space-y-2.5">
+                    <!-- Dynamic Revision Reminders injected via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: RESOURCES & TESTING -->
+        <div id="tab-resources" class="tab-content space-y-4 hidden">
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl">
+                <h2 class="text-sm font-bold text-zinc-200 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-blue-400"></i> Master Resources & Test Series
+                </h2>
+                <p class="text-xs text-zinc-400 mb-4">Track your ICAI Modules, PW Modules, RTP, MTP, PYQ and Mock Tests.</p>
+                
+                <div class="space-y-3">
+                    <div class="p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-zinc-200">Test Series 1 (Full Syllabus)</p>
+                            <p class="text-[10px] text-zinc-500">Evaluation & Score Check</p>
+                        </div>
+                        <input type="checkbox" id="test-series-1" onchange="toggleTestSeries(1)" class="w-5 h-5 accent-cyan-500 rounded cursor-pointer">
+                    </div>
+
+                    <div class="p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-zinc-200">Test Series 2 (Mock Exams)</p>
+                            <p class="text-[10px] text-zinc-500">Exam Simulation</p>
+                        </div>
+                        <input type="checkbox" id="test-series-2" onchange="toggleTestSeries(2)" class="w-5 h-5 accent-cyan-500 rounded cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subject Database Summary -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl">
+                <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">All 7 Subjects Loaded</h3>
+                <div id="subjects-summary" class="space-y-2 text-xs">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: TRIPLE REVISION TRACKER -->
+        <div id="tab-revisions" class="tab-content space-y-4 hidden">
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl">
+                <h2 class="text-sm font-bold text-zinc-200 mb-1 flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-amber-400"></i> Triple-Revision Cycle
+                </h2>
+                <p class="text-xs text-zinc-400 mb-4">Complete all 3 rounds across chapters to lock 100% Rank Mastery.</p>
+                
+                <div class="space-y-4" id="triple-revision-list">
+                    <!-- Dynamic Revision 1, 2, 3 checkboxes per subject -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION BAR -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-darkBg/95 backdrop-blur-lg border-t border-cardBorder z-50 py-2 px-6">
+        <div class="max-w-md mx-auto flex justify-around items-center">
+            <button onclick="switchTab('home')" id="nav-home" class="flex flex-col items-center gap-1 text-cyan-400 transition-colors">
+                <i class="fa-solid fa-house text-lg"></i>
+                <span class="text-[10px] font-medium">Home</span>
+            </button>
+            <button onclick="switchTab('resources')" id="nav-resources" class="flex flex-col items-center gap-1 text-zinc-500 hover:text-textMain transition-colors">
+                <i class="fa-solid fa-folder-open text-lg"></i>
+                <span class="text-[10px] font-medium">Resources</span>
+            </button>
+            <button onclick="switchTab('revisions')" id="nav-revisions" class="flex flex-col items-center gap-1 text-zinc-500 hover:text-textMain transition-colors">
+                <i class="fa-solid fa-rotate-right text-lg"></i>
+                <span class="text-[10px] font-medium">3x Revisions</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // MASTER DATABASE: ALL 7 SUBJECTS & CHAPTERS
+        const masterDatabase = [
+            { id: 'gst', name: 'GST (Indirect Tax)', chapters: [
+                'GST Introduction', 'Supply', 'Value of Supply', 'Time of Supply', 'Place of Supply', 
+                'Charge of GST', 'Input Tax Credit', 'Registration', 'Exemption', 'Payment of Tax', 
+                'E-Way Bill', 'TDS', 'TCS', 'Debit and Credit Note', 'Returns', 'Accounts and Records'
+            ]},
+            { id: 'it', name: 'Income Tax (Direct Tax)', chapters: [
+                'Basic Concepts', 'Residence and Scope of Total Income', 'House Property', 'Salary', 
+                'PGBP', 'Capital Gains', 'Other Sources', 'Set-off and Carry Forward', 'Clubbing of Income', 
+                'Deductions', 'Advance Tax, TDS & TCS'
+            ]},
+            { id: 'costing', name: 'Cost and Management Accounting', chapters: [
+                'Introduction', 'Employee Cost & Direct Expenses', 'Material Cost', 'Overheads', 
+                'Activity Based Costing', 'Cost Sheet', 'Cost Accounting System', 'Service Costing', 
+                'Process Costing', 'Joint and By-Product', 'Marginal Costing', 'Budget & Budgetary Controls', 
+                'Standard Costing', 'Job Costing', 'Batch Costing'
+            ]},
+            { id: 'audit', name: 'Auditing and Ethics', chapters: [
+                'Nature, Objective and Scope', 'Ethics and Terms of Audit Engagement', 'Audit Strategy, Planning, Program', 
+                'Audit Documentation', 'Completion and Review', 'Audit of Bank', 'Audit of Item of Financial Statement', 
+                'Special Feature of Audit & Type of Entities', 'Audit Report', 'Risk Assessment & Internal Controls', 'Audit Evidence'
+            ]},
+            { id: 'law', name: 'Corporate and Other Laws', chapters: [
+                'Introduction', 'Preliminary', 'Incorporation of Company', 'Prospectus and Allotment', 
+                'Share Capital and Debenture', 'Acceptance of Deposit', 'Registration of Charges', 
+                'Declaration and Payment of Dividend', 'Accounts of Companies', 'General Clauses Act', 
+                'Companies Incorporated Outside India', 'Audit and Auditors', 'LLP Act', 'Interpretation of Statutes', 
+                'The Foreign Exchange Management Act', 'Management and Administration'
+            ]},
+            { id: 'fm', name: 'Financial Management (FM)', chapters: [
+                'Cost of Capital', 'Leverages', 'Capital Structure', 'Investment Decisions', 
+                'Dividend Decisions', 'Management of Receivables & Payables', 'Treasury & Cash Management'
+            ]},
+            { id: 'sm', name: 'Strategic Management (SM)', chapters: [
+                'Introduction to Strategic Management', 'Working Capital Management & Financial', 'External Environment', 
+                'Internal Environment', 'Ratio Analysis', 'Strategic Choices', 'Types of Financing', 
+                'Strategic Implementation & Evaluation', 'Inventory Management'
+            ]},
+            { id: 'accounts', name: 'Advanced Accounting & AS', chapters: [
+                'Accounting for Investment', 'Financial Statement', 'Cash Flow Statement', 'Buyback of Security', 
+                'Internal Reconstitution', 'Amalgamation', 'Branch Accounting', 'Consolidated Financial Statement', 
+                'Framework for Preparation', 'AS 1', 'AS 2', 'AS 4', 'AS 5', 'AS 7', 'AS 9', 'AS 10', 'AS 11', 'AS 12', 
+                'AS 15', 'AS 16', 'AS 17', 'AS 18', 'AS 19', 'AS 20', 'AS 22', 'AS 23', 'AS 24', 'AS 25', 'AS 26'
+            ]}
+        ];
+
+        // Flatten all chapters into a single array with unique keys
+        let allChapters = [];
+        masterDatabase.forEach(sub => {
+            sub.chapters.forEach((ch, idx) => {
+                allChapters.push({
+                    key: `${sub.id}_${idx}`,
+                    subject: sub.name,
+                    title: ch
+                });
+            });
+        });
+
+        // STATE MANAGEMENT (LocalStorage)
+        let appState = JSON.parse(localStorage.getItem('ca_inter_state_2027')) || {
+            completedSyllabus: {}, // key: true
+            revisionQueue: [],     // array of { key, title, availableDate }
+            completedRevisions: {}, // key: { rev1: bool, rev2: bool, rev3: bool }
+            testSeries: { 1: false, 2: false }
+        };
+
+        function saveState() {
+            localStorage.setItem('ca_inter_state_2027', JSON.stringify(appState));
+            updateUI();
+        }
+
+        // COUNTDOWN TIMER TO MAY 27, 2027
+        function updateCountdown() {
+            const examDate = new Date('May 27, 2027 00:00:00').getTime();
+            const now = new Date().getTime();
+            const diff = examDate - now;
+            
+            if (diff > 0) {
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                document.getElementById('countdown-text').innerText = `${days} Days ${hours} Hrs Left`;
+            } else {
+                document.getElementById('countdown-text').innerText = `Exams Started!`;
+            }
+        }
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+
+        // TAB NAVIGATION
+        function switchTab(tabId) {
+            ['home', 'resources', 'revisions'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`nav-${t}`).className = "flex flex-col items-center gap-1 text-zinc-500 hover:text-textMain transition-colors";
+            });
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            document.getElementById(`nav-${tabId}`).className = "flex flex-col items-center gap-1 text-cyan-400 transition-colors";
+        }
+
+        // INITIALIZE DAILY TARGETS IF EMPTY
+        function initDailyTargets() {
+            if (!appState.dailyTargets || appState.dailyTargets.length === 0) {
+                // Pick 2 uncompleted chapters
+                let uncompleted = allChapters.filter(ch => !appState.completedSyllabus[ch.key]);
+                appState.dailyTargets = uncompleted.slice(0, 2).map(ch => ch.key);
+                saveState();
+            }
+        }
+
+        // COMPLETE DAILY TARGET & PUSH TO REVISION QUEUE (2 DAYS DELAY)
+        function completeTarget(key) {
+            appState.completedSyllabus[key] = true;
+            
+            // Remove from daily targets
+            appState.dailyTargets = appState.dailyTargets.filter(k => k !== key);
+            
+            // Add next uncompleted chapter to daily targets if available
+            let uncompleted = allChapters.filter(ch => !appState.completedSyllabus[ch.key] && !appState.dailyTargets.includes(ch.key));
+            if (uncompleted.length > 0 && appState.dailyTargets.length < 2) {
+                appState.dailyTargets.push(uncompleted[0].key);
+            }
+
+            // Push to Revision Queue with 2 days delay
+            let unlockDate = new Date();
+            unlockDate.setDate(unlockDate.getDate() + 2);
+            appState.revisionQueue.push({
+                key: key,
+                unlockTime: unlockDate.getTime()
+            });
+
+            saveState();
+        }
+
+        // COMPLETE REVISION ITEM (FIFO)
+        function completeRevisionItem(index) {
+            let item = appState.revisionQueue[index];
+            if (!item) return;
+
+            let key = item.key;
+            if (!appState.completedRevisions[key]) {
+                appState.completedRevisions[key] = { rev1: false, rev2: false, rev3: false };
+            }
+
+            if (!appState.completedRevisions[key].rev1) {
+                appState.completedRevisions[key].rev1 = true;
+            } else if (!appState.completedRevisions[key].rev2) {
+                appState.completedRevisions[key].rev2 = true;
+            } else if (!appState.completedRevisions[key].rev3) {
+                appState.completedRevisions[key].rev3 = true;
+            }
+
+            // Remove from active queue
+            appState.revisionQueue.splice(index, 1);
+            saveState();
+        }
+
+        function toggleTestSeries(num) {
+            appState.testSeries[num] = document.getElementById(`test-series-${num}`).checked;
+            saveState();
+        }
+
+        // UPDATE UI & PROGRESS BARS
+        function updateUI() {
+            // 1. Syllabus Progress
+            let totalChapters = allChapters.length;
+            let completedCount = Object.keys(appState.completedSyllabus).filter(k => appState.completedSyllabus[k]).length;
+            let syllabusPct = Math.round((completedCount / totalChapters) * 100);
+            document.getElementById('syllabus-pct').innerText = `${syllabusPct}%`;
+            document.getElementById('syllabus-bar').style.width = `${syllabusPct}%`;
+
+            // 2. Rank Mastery Progress (Driven by Triple Revisions)
+            let totalRevSlots = totalChapters * 3;
+            let completedRevSlots = 0;
+            Object.keys(appState.completedRevisions).forEach(k => {
+                if (appState.completedRevisions[k].rev1) completedRevSlots++;
+                if (appState.completedRevisions[k].rev2) completedRevSlots++;
+                if (appState.completedRevisions[k].rev3) completedRevSlots++;
+            });
+            let rankPct = Math.round((completedRevSlots / totalRevSlots) * 100);
+            document.getElementById('rank-pct').innerText = `${rankPct}%`;
+            document.getElementById('rank-bar').style.width = `${rankPct}%`;
+
+            // 3. Render Daily Targets
+            let targetsHtml = '';
+            if (!appState.dailyTargets || appState.dailyTargets.length === 0) {
+                targetsHtml = `<p class="text-xs text-zinc-500 italic">All targets completed! Great job.</p>`;
+            } else {
+                appState.dailyTargets.forEach(key => {
+                    let ch = allChapters.find(c => c.key === key);
+                    if (ch) {
+                        targetsHtml += `
+                            <div class="flex items-center justify-between p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl">
+                                <div>
+                                    <span class="text-[10px] text-emerald-400 font-semibold block">${ch.subject}</span>
+                                    <p class="text-xs font-medium text-zinc-200">${ch.title}</p>
+                                </div>
+                                <button onclick="completeTarget('${ch.key}')" class="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-semibold rounded-lg border border-emerald-500/30 transition-colors">
+                                    <i class="fa-solid fa-check mr-1"></i> Done
+                                </button>
+                            </div>
+                        `;
+                    }
+                });
+            }
+            document.getElementById('daily-targets-container').innerHTML = targetsHtml;
+
+            // 4. Render Revision Reminders (FIFO Queue where unlockTime <= now)
+            let now = new Date().getTime();
+            let revHtml = '';
+            let availableQueue = appState.revisionQueue.filter(item => item.unlockTime <= now);
+
+            if (availableQueue.length === 0) {
+                revHtml = `<p class="text-xs text-zinc-500 italic">No revision due right now (2-day delay active).</p>`;
+            } else {
+                availableQueue.forEach((item, index) => {
+                    let ch = allChapters.find(c => c.key === item.key);
+                    if (ch) {
+                        revHtml += `
+                            <div class="flex items-center justify-between p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl">
+                                <div>
+                                    <span class="text-[10px] text-purple-400 font-semibold block">${ch.subject}</span>
+                                    <p class="text-xs font-medium text-zinc-200">${ch.title}</p>
+                                </div>
+                                <button onclick="completeRevisionItem(${index})" class="px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-xs font-semibold rounded-lg border border-purple-500/30 transition-colors">
+                                    <i class="fa-solid fa-rotate-left mr-1"></i> Revise
+                                </button>
+                            </div>
+                        `;
+                    }
+                });
+            }
+            document.getElementById('revision-reminders-container').innerHTML = revHtml;
+
+            // 5. Render Resources Summary
+            let resHtml = '';
+            masterDatabase.forEach(sub => {
+                let subChapters = sub.chapters;
+                let done = subChapters.filter(c => {
+                    let foundKey = allChapters.find(ac => ac.subject === sub.name && ac.title === c)?.key;
+                    return foundKey && appState.completedSyllabus[foundKey];
+                }).length;
+                resHtml += `
+                    <div class="flex justify-between items-center py-1.5 border-b border-zinc-800/60">
+                        <span class="text-zinc-300 font-medium">${sub.name}</span>
+                        <span class="text-zinc-500 text-[11px]">${done}/${subChapters.length} Done</span>
+                    </div>
+                `;
+            });
+            document.getElementById('subjects-summary').innerHTML = resHtml;
+
+            // Test series checkboxes sync
+            document.getElementById('test-series-1').checked = !!appState.testSeries[1];
+            document.getElementById('test-series-2').checked = !!appState.testSeries[2];
+
+            // 6. Render Triple Revision Tracker (Tab 3)
+            let tripHtml = '';
+            masterDatabase.forEach(sub => {
+                tripHtml += `<div class="mb-4"><h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">${sub.name}</h3><div class="space-y-2">`;
+                sub.chapters.forEach((ch, idx) => {
+                    let key = `${sub.id}_${idx}`;
+                    let revState = appState.completedRevisions[key] || { rev1: false, rev2: false, rev3: false };
+                    tripHtml += `
+                        <div class="p-2.5 bg-zinc-900/60 border border-zinc-800 rounded-xl flex items-center justify-between text-xs">
+                            <span class="text-zinc-300 font-medium truncate max-w-[180px]">${ch}</span>
+                            <div class="flex items-center gap-3">
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" ${revState.rev1 ? 'checked' : ''} disabled class="accent-amber-400"> R1</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" ${revState.rev2 ? 'checked' : ''} disabled class="accent-amber-400"> R2</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" ${revState.rev3 ? 'checked' : ''} disabled class="accent-amber-400"> R3</label>
+                            </div>
+                        </div>
+                    `;
+                });
+                tripHtml += `</div></div>`;
+            });
+            document.getElementById('triple-revision-list').innerHTML = tripHtml;
+        }
+
+        // INITIAL LOAD
+        initDailyTargets();
+        updateUI();
+    </script>
+</body>
+</html>
