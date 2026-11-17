@@ -88,6 +88,20 @@
                 </div>
             </div>
 
+            <!-- Backlog / Passed Pool Section -->
+            <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-bold text-zinc-200 flex items-center gap-2">
+                        <i class="fa-solid fa-box-archive text-amber-500"></i> Backlog & Passed Pool
+                    </h2>
+                    <span id="backlog-count" class="text-xs px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full font-medium">0 items</span>
+                </div>
+                <p class="text-[11px] text-zinc-400 mb-3">Chapters you passed/skipped sit here. Pick them back whenever you're ready!</p>
+                <div id="backlog-container" class="space-y-2.5">
+                    <!-- Dynamic Backlog items injected via JS -->
+                </div>
+            </div>
+
             <!-- Revision Reminders Section (Spaced Repetition FIFO Queue) -->
             <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl">
                 <div class="flex items-center justify-between mb-3">
@@ -240,7 +254,8 @@
             revisionQueue: [],     
             completedRevisions: {}, 
             testSeries: { 1: false, 2: false },
-            dailyTargets: []
+            dailyTargets: [],
+            backlogQueue: [] // Passed/Skipped chapters pool
         };
 
         function saveState() {
@@ -277,12 +292,15 @@
 
         // INITIALIZE DAILY TARGETS: STRICT 1 THEORY + 1 PRACTICAL
         function initDailyTargets() {
-            // Clean up completed chapters from daily targets
+            if (!appState.backlogQueue) appState.backlogQueue = [];
+
+            // Clean up completed chapters from daily targets and backlog
             if (appState.dailyTargets) {
                 appState.dailyTargets = appState.dailyTargets.filter(k => !appState.completedSyllabus[k]);
             } else {
                 appState.dailyTargets = [];
             }
+            appState.backlogQueue = appState.backlogQueue.filter(k => !appState.completedSyllabus[k]);
 
             // Ensure we always have exactly 1 Practical and 1 Theory target
             let practicalNeeded = !appState.dailyTargets.some(k => {
@@ -296,12 +314,12 @@
             });
 
             if (practicalNeeded) {
-                let uncompletedPractical = allChapters.find(ch => ch.type === 'practical' && !appState.completedSyllabus[ch.key] && !appState.dailyTargets.includes(ch.key));
+                let uncompletedPractical = allChapters.find(ch => ch.type === 'practical' && !appState.completedSyllabus[ch.key] && !appState.dailyTargets.includes(ch.key) && !appState.backlogQueue.includes(ch.key));
                 if (uncompletedPractical) appState.dailyTargets.push(uncompletedPractical.key);
             }
 
             if (theoryNeeded) {
-                let uncompletedTheory = allChapters.find(ch => ch.type === 'theory' && !appState.completedSyllabus[ch.key] && !appState.dailyTargets.includes(ch.key));
+                let uncompletedTheory = allChapters.find(ch => ch.type === 'theory' && !appState.completedSyllabus[ch.key] && !appState.dailyTargets.includes(ch.key) && !appState.backlogQueue.includes(ch.key));
                 if (uncompletedTheory) appState.dailyTargets.push(uncompletedTheory.key);
             }
 
@@ -312,8 +330,9 @@
         function completeTarget(key) {
             appState.completedSyllabus[key] = true;
             
-            // Remove from daily targets
+            // Remove from daily targets and backlog if present
             appState.dailyTargets = appState.dailyTargets.filter(k => k !== key);
+            appState.backlogQueue = appState.backlogQueue.filter(k => k !== key);
 
             // Push to Revision Queue with 2 days delay
             let unlockDate = new Date();
@@ -325,6 +344,26 @@
 
             // Refill targets to maintain 1 Theory + 1 Practical mix
             initDailyTargets();
+        }
+
+        // PASS / SKIP TARGET (Moves to Backlog Pool)
+        function passTarget(key) {
+            appState.dailyTargets = appState.dailyTargets.filter(k => k !== key);
+            if (!appState.backlogQueue.includes(key)) {
+                appState.backlogQueue.push(key);
+            }
+            initDailyTargets();
+        }
+
+        // BRING BACK FROM BACKLOG TO DAILY TARGETS
+        function restoreFromBacklog(key) {
+            appState.backlogQueue = appState.backlogQueue.filter(k => k !== key);
+            let ch = allChapters.find(c => c.key === key);
+            if (ch) {
+                // If there's space or replace existing type, or just push
+                appState.dailyTargets.push(key);
+            }
+            saveState();
         }
 
         // COMPLETE REVISION ITEM (FIFO)
@@ -388,16 +427,21 @@
                         let badgeText = ch.type === 'practical' ? 'Practical' : 'Theory';
                         targetsHtml += `
                             <div class="flex items-center justify-between p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl">
-                                <div>
+                                <div class="pr-2">
                                     <div class="flex items-center gap-2 mb-0.5">
                                         <span class="text-[10px] text-zinc-400 font-semibold">${ch.subject}</span>
                                         <span class="text-[9px] px-1.5 py-0.5 rounded border ${badgeColor} uppercase tracking-wider">${badgeText}</span>
                                     </div>
                                     <p class="text-xs font-medium text-zinc-200">${ch.title}</p>
                                 </div>
-                                <button onclick="completeTarget('${ch.key}')" class="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-semibold rounded-lg border border-emerald-500/30 transition-colors shrink-0 ml-2">
-                                    <i class="fa-solid fa-check mr-1"></i> Done
-                                </button>
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <button onclick="passTarget('${ch.key}')" class="px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold rounded-lg border border-zinc-700 transition-colors" title="Pass / Skip for later">
+                                        <i class="fa-solid fa-forward"></i>
+                                    </button>
+                                    <button onclick="completeTarget('${ch.key}')" class="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-semibold rounded-lg border border-emerald-500/30 transition-colors">
+                                        <i class="fa-solid fa-check mr-1"></i> Done
+                                    </button>
+                                </div>
                             </div>
                         `;
                     }
@@ -405,7 +449,35 @@
             }
             document.getElementById('daily-targets-container').innerHTML = targetsHtml;
 
-            // 4. Render Revision Reminders (FIFO Queue where unlockTime <= now)
+            // 4. Render Backlog Pool
+            let backlogHtml = '';
+            let backlogList = appState.backlogQueue || [];
+            document.getElementById('backlog-count').innerText = `${backlogList.length} items`;
+            
+            if (backlogList.length === 0) {
+                backlogHtml = `<p class="text-xs text-zinc-500 italic">No passed chapters in backlog.</p>`;
+            } else {
+                backlogList.forEach(key => {
+                    let ch = allChapters.find(c => c.key === key);
+                    if (ch) {
+                        let badgeColor = ch.type === 'practical' ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' : 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20';
+                        backlogHtml += `
+                            <div class="flex items-center justify-between p-2.5 bg-zinc-900/60 border border-zinc-800 rounded-xl">
+                                <div>
+                                    <span class="text-[10px] text-zinc-400 font-semibold block">${ch.subject}</span>
+                                    <p class="text-xs font-medium text-zinc-200">${ch.title}</p>
+                                </div>
+                                <button onclick="restoreFromBacklog('${ch.key}')" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 text-xs font-semibold rounded-lg border border-amber-500/30 transition-colors shrink-0 ml-2">
+                                    <i class="fa-solid fa-rotate-left mr-1"></i> Study Now
+                                </button>
+                            </div>
+                        `;
+                    }
+                });
+            }
+            document.getElementById('backlog-container').innerHTML = backlogHtml;
+
+            // 5. Render Revision Reminders (FIFO Queue where unlockTime <= now)
             let now = new Date().getTime();
             let revHtml = '';
             let availableQueue = appState.revisionQueue.filter(item => item.unlockTime <= now);
@@ -432,7 +504,7 @@
             }
             document.getElementById('revision-reminders-container').innerHTML = revHtml;
 
-            // 5. Render Resources Summary
+            // 6. Render Resources Summary
             let resHtml = '';
             masterDatabase.forEach(sub => {
                 let subChapters = sub.chapters;
@@ -453,7 +525,7 @@
             document.getElementById('test-series-1').checked = !!appState.testSeries[1];
             document.getElementById('test-series-2').checked = !!appState.testSeries[2];
 
-            // 6. Render Triple Revision Tracker (Tab 3)
+            // 7. Render Triple Revision Tracker (Tab 3)
             let tripHtml = '';
             masterDatabase.forEach(sub => {
                 tripHtml += `<div class="mb-4"><h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">${sub.name}</h3><div class="space-y-2">`;
