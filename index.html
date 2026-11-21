@@ -116,7 +116,7 @@
             </div>
         </div>
 
-        <!-- TAB 2: RESOURCES & TESTING -->
+        <!-- TAB 2: RESOURCES & SUBJECT CHAPTERS -->
         <div id="tab-resources" class="tab-content space-y-4 hidden">
             <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl">
                 <h2 class="text-sm font-bold text-zinc-200 mb-3 flex items-center gap-2">
@@ -143,10 +143,14 @@
                 </div>
             </div>
 
-            <!-- Subject Database Summary -->
+            <!-- Interactive Subject -> Chapters First-Time Syllabus Mark -->
             <div class="bg-cardBg border border-cardBorder rounded-2xl p-4 shadow-xl">
-                <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">All 8 Modules Loaded</h3>
-                <div id="subjects-summary" class="space-y-2 text-xs">
+                <div class="flex items-center justify-between mb-1">
+                    <h3 class="text-xs font-bold text-zinc-200 uppercase tracking-wider">Subjects & Syllabus Tick</h3>
+                    <span class="text-[10px] text-cyan-400">Tap subject to expand</span>
+                </div>
+                <p class="text-[11px] text-zinc-400 mb-3">Already done chapters? Tap any subject below and mark them done for first-time syllabus completion & 2-day revision queue.</p>
+                <div id="subjects-accordion" class="space-y-2.5 text-xs">
                     <!-- Populated via JS -->
                 </div>
             </div>
@@ -242,7 +246,8 @@
                 allChapters.push({
                     key: `${sub.id}_${idx}`,
                     subject: sub.name,
-                    type: sub.type, // 'theory' or 'practical'
+                    subjectId: sub.id,
+                    type: sub.type,
                     title: ch
                 });
             });
@@ -255,8 +260,11 @@
             completedRevisions: {}, 
             testSeries: { 1: false, 2: false },
             dailyTargets: [],
-            backlogQueue: [] // Passed/Skipped chapters pool
+            backlogQueue: [],
+            expandedSubjects: {}
         };
+
+        if (!appState.expandedSubjects) appState.expandedSubjects = {};
 
         function saveState() {
             localStorage.setItem('ca_inter_state_2027', JSON.stringify(appState));
@@ -290,11 +298,38 @@
             document.getElementById(`nav-${tabId}`).className = "flex flex-col items-center gap-1 text-cyan-400 transition-colors";
         }
 
+        // TOGGLE SUBJECT ACCORDION IN RESOURCES TAB
+        function toggleSubjectExpand(subId) {
+            appState.expandedSubjects[subId] = !appState.expandedSubjects[subId];
+            saveState();
+        }
+
+        // MARK FIRST-TIME SYLLABUS COMPLETION FROM ANYWHERE (HOME OR SUBJECT LIST)
+        function markChapterFirstTimeDone(key) {
+            if (appState.completedSyllabus[key]) return;
+
+            appState.completedSyllabus[key] = true;
+            appState.dailyTargets = (appState.dailyTargets || []).filter(k => k !== key);
+            appState.backlogQueue = (appState.backlogQueue || []).filter(k => k !== key);
+
+            // Avoid duplicate entries in revisionQueue for the same key
+            const alreadyQueued = (appState.revisionQueue || []).some(item => item.key === key);
+            if (!alreadyQueued) {
+                let unlockDate = new Date();
+                unlockDate.setDate(unlockDate.getDate() + 2);
+                appState.revisionQueue.push({
+                    key: key,
+                    unlockTime: unlockDate.getTime()
+                });
+            }
+
+            initDailyTargets();
+        }
+
         // INITIALIZE DAILY TARGETS: STRICT 1 THEORY + 1 PRACTICAL
         function initDailyTargets() {
             if (!appState.backlogQueue) appState.backlogQueue = [];
 
-            // Clean up completed chapters from daily targets and backlog
             if (appState.dailyTargets) {
                 appState.dailyTargets = appState.dailyTargets.filter(k => !appState.completedSyllabus[k]);
             } else {
@@ -302,7 +337,6 @@
             }
             appState.backlogQueue = appState.backlogQueue.filter(k => !appState.completedSyllabus[k]);
 
-            // Ensure we always have exactly 1 Practical and 1 Theory target
             let practicalNeeded = !appState.dailyTargets.some(k => {
                 let ch = allChapters.find(c => c.key === k);
                 return ch && ch.type === 'practical';
@@ -328,22 +362,7 @@
 
         // COMPLETE DAILY TARGET & PUSH TO REVISION QUEUE (2 DAYS DELAY)
         function completeTarget(key) {
-            appState.completedSyllabus[key] = true;
-            
-            // Remove from daily targets and backlog if present
-            appState.dailyTargets = appState.dailyTargets.filter(k => k !== key);
-            appState.backlogQueue = appState.backlogQueue.filter(k => k !== key);
-
-            // Push to Revision Queue with 2 days delay
-            let unlockDate = new Date();
-            unlockDate.setDate(unlockDate.getDate() + 2);
-            appState.revisionQueue.push({
-                key: key,
-                unlockTime: unlockDate.getTime()
-            });
-
-            // Refill targets to maintain 1 Theory + 1 Practical mix
-            initDailyTargets();
+            markChapterFirstTimeDone(key);
         }
 
         // PASS / SKIP TARGET (Moves to Backlog Pool)
@@ -359,8 +378,7 @@
         function restoreFromBacklog(key) {
             appState.backlogQueue = appState.backlogQueue.filter(k => k !== key);
             let ch = allChapters.find(c => c.key === key);
-            if (ch) {
-                // If there's space or replace existing type, or just push
+            if (ch && !appState.completedSyllabus[key]) {
                 appState.dailyTargets.push(key);
             }
             saveState();
@@ -384,7 +402,6 @@
                 appState.completedRevisions[key].rev3 = true;
             }
 
-            // Remove from active queue
             appState.revisionQueue.splice(index, 1);
             saveState();
         }
@@ -460,7 +477,6 @@
                 backlogList.forEach(key => {
                     let ch = allChapters.find(c => c.key === key);
                     if (ch) {
-                        let badgeColor = ch.type === 'practical' ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' : 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20';
                         backlogHtml += `
                             <div class="flex items-center justify-between p-2.5 bg-zinc-900/60 border border-zinc-800 rounded-xl">
                                 <div>
@@ -504,22 +520,48 @@
             }
             document.getElementById('revision-reminders-container').innerHTML = revHtml;
 
-            // 6. Render Resources Summary
-            let resHtml = '';
+            // 6. Render Interactive Subject Accordion in Resources Tab
+            let accHtml = '';
             masterDatabase.forEach(sub => {
-                let subChapters = sub.chapters;
-                let done = subChapters.filter(c => {
-                    let foundKey = allChapters.find(ac => ac.subject === sub.name && ac.title === c)?.key;
-                    return foundKey && appState.completedSyllabus[foundKey];
-                }).length;
-                resHtml += `
-                    <div class="flex justify-between items-center py-1.5 border-b border-zinc-800/60">
-                        <span class="text-zinc-300 font-medium">${sub.name}</span>
-                        <span class="text-zinc-500 text-[11px]">${done}/${subChapters.length} Done</span>
+                let doneCount = sub.chapters.filter((_, idx) => !!appState.completedSyllabus[`${sub.id}_${idx}`]).length;
+                let isOpen = !!appState.expandedSubjects[sub.id];
+
+                let chaptersListHtml = '';
+                if (isOpen) {
+                    chaptersListHtml = `<div class="mt-2.5 pt-2.5 border-t border-zinc-800/80 space-y-2">`;
+                    sub.chapters.forEach((chTitle, idx) => {
+                        let key = `${sub.id}_${idx}`;
+                        let isDone = !!appState.completedSyllabus[key];
+                        chaptersListHtml += `
+                            <div class="flex items-center justify-between p-2 rounded-lg ${isDone ? 'bg-emerald-500/5 border border-emerald-500/20' : 'bg-zinc-950/70 border border-zinc-800/70'}">
+                                <span class="text-xs pr-2 ${isDone ? 'text-emerald-300 line-through opacity-80' : 'text-zinc-200'}">${chTitle}</span>
+                                ${isDone 
+                                    ? `<span class="text-[10px] px-2 py-1 rounded-md bg-emerald-500/15 text-emerald-400 font-semibold shrink-0"><i class="fa-solid fa-check mr-1"></i>Done</span>`
+                                    : `<button onclick="markChapterFirstTimeDone('${key}')" class="px-2.5 py-1 rounded-md bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-[11px] font-semibold shrink-0 transition-colors">Mark Done</button>`
+                                }
+                            </div>
+                        `;
+                    });
+                    chaptersListHtml += `</div>`;
+                }
+
+                accHtml += `
+                    <div class="p-3 bg-zinc-900/70 border border-zinc-800 rounded-xl">
+                        <button type="button" onclick="toggleSubjectExpand('${sub.id}')" class="w-full flex items-center justify-between text-left">
+                            <div>
+                                <p class="text-xs font-semibold text-zinc-100">${sub.name}</p>
+                                <p class="text-[10px] text-zinc-500">${doneCount}/${sub.chapters.length} Syllabus Done</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[11px] font-semibold text-cyan-400">${Math.round((doneCount / sub.chapters.length) * 100)}%</span>
+                                <i class="fa-solid ${isOpen ? 'fa-chevron-up' : 'fa-chevron-down'} text-zinc-400 text-xs"></i>
+                            </div>
+                        </button>
+                        ${chaptersListHtml}
                     </div>
                 `;
             });
-            document.getElementById('subjects-summary').innerHTML = resHtml;
+            document.getElementById('subjects-accordion').innerHTML = accHtml;
 
             // Test series checkboxes sync
             document.getElementById('test-series-1').checked = !!appState.testSeries[1];
